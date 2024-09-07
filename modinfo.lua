@@ -11,5 +11,5 @@ return {
       --'rapid://chobby:test', --this uses rapid pinned chobby
       --'Chobby $VERSION', -- this specifies chobby.sdd working path
   },
-
+adding a syntax error here
 }
