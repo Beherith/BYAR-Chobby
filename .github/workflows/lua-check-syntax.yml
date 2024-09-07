@@ -1,0 +1,58 @@
+name: Lua Syntax Check
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  lua_syntax_check:
+    name: Check Lua Syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Install Lua and Luacheck
+      - name: Set up Lua
+        uses: actions/setup-lua@v2
+        with:
+          lua-version: '5.1' # You can change the Lua version if needed
+
+      - name: Install Luacheck
+        run: |
+          luarocks install luacheck
+
+      # Check for modified Lua files in the commit or pull request
+      - name: Get list of modified Lua files
+        id: modified_files
+        run: |
+          MODIFIED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- '*.lua')
+          echo "::set-output name=files::$MODIFIED_FILES"
+
+      # Run Luacheck on modified files
+      - name: Run Luacheck
+        if: steps.modified_files.outputs.files != ''
+        run: |
+          echo "${{ steps.modified_files.outputs.files }}" | xargs luacheck
+        continue-on-error: true # Continue to display output even if errors occur
+
+      # Annotate PR with results
+      - name: Post Luacheck results
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('luacheck.log', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Luacheck results\n\`\`\`text\n${output}\n\`\`\``
+            })
