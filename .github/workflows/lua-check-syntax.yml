@@ -18,26 +18,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      # Install Lua and Luacheck
-      - name: Install Lua and Luacheck
+      # Install Lua and LuaRocks
+      - name: Install Lua and LuaRocks
         run: |
           sudo apt-get update
-          sudo apt-get install -y lua5.1 luarocks
-          luarocks install luacheck
+          sudo apt-get install -y lua5.4 luarocks
 
-      # Check for modified Lua files in the commit or pull request
+      # Install Luacheck locally
+      - name: Install Luacheck locally
+        run: |
+          luarocks --local install luacheck
+          # Ensure local bin directory is in the PATH
+          echo 'export PATH=$HOME/.luarocks/bin:$PATH' >> $GITHUB_ENV
+
+      # Get list of modified Lua files
       - name: Get list of modified Lua files
         id: modified_files
         run: |
           MODIFIED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- '*.lua')
           echo "::set-output name=files::$MODIFIED_FILES"
 
-      # Run Luacheck on modified files
+      # Run Luacheck on modified files and output to a log file
       - name: Run Luacheck
         if: steps.modified_files.outputs.files != ''
         run: |
-          echo "${{ steps.modified_files.outputs.files }}" | xargs luacheck > luacheck.log || true
-        continue-on-error: true # Continue to display output even if errors occur
+          echo "${{ steps.modified_files.outputs.files }}" | xargs $HOME/.luarocks/bin/luacheck > luacheck.log || true
 
       # Annotate PR with results
       - name: Post Luacheck results
