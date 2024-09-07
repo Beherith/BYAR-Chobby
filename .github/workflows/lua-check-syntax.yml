@@ -36,7 +36,7 @@ jobs:
       - name: Run Luacheck
         if: steps.modified_files.outputs.files != ''
         run: |
-          echo "${{ steps.modified_files.outputs.files }}" | xargs luacheck
+          echo "${{ steps.modified_files.outputs.files }}" | xargs luacheck > luacheck.log || true
         continue-on-error: true # Continue to display output even if errors occur
 
       # Annotate PR with results
